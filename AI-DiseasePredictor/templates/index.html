@@ -1,0 +1,872 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Disease Predictor - Smart Health Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .search-highlight {
+            background-color: #fef3c7;
+            font-weight: bold;
+        }
+
+        /* Dark mode specific styles */
+        .dark .search-highlight {
+            background-color: #451a03;
+            color: #fbbf24;
+        }
+
+        /* Custom dark mode gradients */
+        .dark .bg-gradient-to-br {
+            background: linear-gradient(to bottom right, #1f2937, #374151);
+        }
+
+        /* Theme transition */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Print styles - Only show results section when printing */
+        @media print {
+            /* Hide everything by default */
+            body * {
+                visibility: hidden;
+            }
+            
+            /* Show only the results section and its children */
+            #results-section, #results-section * {
+                visibility: visible;
+            }
+            
+            /* Position the results section for printing */
+            #results-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                box-shadow: none;
+                border-radius: 0;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            /* Remove gradients and fancy styling for print */
+            .bg-gradient-to-br,
+            .bg-gradient-to-r {
+                background: white !important;
+            }
+            
+            /* Hide action buttons in print */
+            .print-hide {
+                display: none !important;
+            }
+            
+            /* Ensure text is black for print */
+            * {
+                color: black !important;
+                background: white !important;
+            }
+            
+            /* Keep important colored backgrounds for medical context */
+            .bg-red-50, #emergency-alert {
+                background: #fee2e2 !important;
+                border: 2px solid #dc2626 !important;
+            }
+            
+            .bg-green-50 {
+                background: #f0f9ff !important;
+                border: 1px solid #10b981 !important;
+            }
+            
+            .bg-blue-50 {
+                background: #eff6ff !important;
+                border: 1px solid #3b82f6 !important;
+            }
+            
+            .bg-purple-50 {
+                background: #faf5ff !important;
+                border: 1px solid #8b5cf6 !important;
+            }
+            
+            /* Style headings appropriately for print */
+            h1, h2, h3 {
+                color: black !important;
+                page-break-after: avoid;
+            }
+            
+            /* Add page breaks where appropriate */
+            .page-break {
+                page-break-before: always;
+            }
+            
+            /* Ensure lists print properly */
+            ul, li {
+                color: black !important;
+            }
+            
+            /* Print-specific title */
+            .print-title {
+                display: block !important;
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 20px;
+                border-bottom: 2px solid black;
+                padding-bottom: 10px;
+            }
+        }
+        
+        /* Hide print title on screen */
+        .print-title {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
+
+    <!-- Header -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Dark Mode Toggle -->
+        <div class="flex justify-end mb-4">
+            <button id="theme-toggle" class="bg-white dark:bg-gray-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
+                <i id="theme-icon" class="fas fa-moon text-gray-600 dark:text-yellow-400 text-lg"></i>
+            </button>
+        </div>
+
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4">
+                <i class="fas fa-user-md text-white text-3xl"></i>
+            </div>
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                AI Disease Predictor
+            </h1>
+            <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Advanced AI-powered health assessment tool. Select your symptoms to get instant predictions and recommendations.
+            </p>
+            <!-- Powered by Credit -->
+            <div class="mt-6 flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                <i class="fas fa-code text-blue-500"></i>
+                <span>Powered by</span>
+                <span class="font-semibold text-blue-600 dark:text-blue-400">Rakesh Raushan</span>
+                <i class="fas fa-heart text-red-500 animate-pulse"></i>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-6xl mx-auto">
+            <!-- Symptom Selection Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 animate-fade-in border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-search text-blue-600 dark:text-blue-400 text-2xl mr-3"></i>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Select Your Symptoms</h2>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="symptom-search" placeholder="Search symptoms (e.g., headache, fever, cough...)" 
+                               class="w-full p-4 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 focus:border-blue-500 dark:focus:border-blue-400 text-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
+                        <i class="fas fa-search absolute right-4 top-5 text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        <i class="fas fa-lightbulb text-yellow-500 dark:text-yellow-400 mr-1"></i>
+                        Tip: Use the search to quickly find symptoms or browse by category below
+                    </p>
+                </div>
+
+                <!-- Selected Symptoms Counter -->
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-xl border border-blue-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+                            <span class="font-semibold text-blue-800 dark:text-blue-300">Selected Symptoms: </span>
+                            <span id="selected-count" class="font-bold text-blue-600 dark:text-blue-400 ml-1">0</span>
+                        </div>
+                        <button type="button" id="clear-all" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-sm">
+                            <i class="fas fa-times mr-1"></i>Clear All
+                        </button>
+                    </div>
+                    <div id="selected-symptoms-list" class="mt-2 flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Form -->
+                <form id="prediction-form" autocomplete="off" onsubmit="return false;">
+                    <!-- Symptom Categories -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="symptom-categories"></div>
+                    
+                    <!-- Submit Button - Prominently placed after symptom selection -->
+                    <div class="text-center mb-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+                        <div class="mb-4" id="submit-instruction">
+                            <p class="text-gray-600 dark:text-gray-300 mb-4">
+                                <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mr-2"></i>
+                                <span id="instruction-text">Select symptoms above, then click the button below to get your health assessment</span>
+                            </p>
+                        </div>
+                        <button type="button" id="predict-btn" onclick="handlePredictionClick()" 
+                                class="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-5 px-16 rounded-2xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transform hover:scale-105 transition-all duration-200 text-xl shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-w-64">
+                            <i class="fas fa-brain mr-3"></i>
+                            <span id="btn-text">Predict Disease</span>
+                            <i class="fas fa-spinner fa-spin ml-3 hidden" id="loading-spinner"></i>
+                        </button>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                            <i class="fas fa-shield-alt text-green-500 dark:text-green-400 mr-1"></i>
+                            Your data is processed securely and not stored
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden animate-slide-up">
+                <!-- Print-only title -->
+                <div class="print-title">
+                    <h1>Medical Health Assessment Report</h1>
+                    <p>Generated by AI Disease Predictor</p>
+                    <p>Date: <span id="print-date"></span></p>
+                </div>
+
+                <!-- Emergency Alert -->
+                <div id="emergency-alert" class="hidden bg-red-50 border-l-4 border-red-500 p-6 mb-6 rounded-xl shadow-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-4 animate-pulse-slow"></i>
+                        <div>
+                            <h3 class="text-red-800 font-bold text-lg">⚠️ MEDICAL EMERGENCY ALERT</h3>
+                            <p class="text-red-700 mt-1">Your symptoms may indicate a serious medical condition. Please seek immediate medical attention or call emergency services.</p>
+                            <div class="mt-3">
+                                <a href="tel:911" class="inline-flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 mr-3">
+                                    <i class="fas fa-phone mr-2"></i>Call 911
+                                </a>
+                                <a href="tel:108" class="inline-flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                    <i class="fas fa-ambulance mr-2"></i>Call 108 (India)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Result Card -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center mb-6">
+                        <div id="disease-icon" class="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-diagnoses text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Analysis Result</h2>
+                            <p class="text-gray-600 dark:text-gray-300">AI-powered health assessment</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Level Indicator -->
+                    <div class="mb-6 p-4 rounded-xl" id="risk-indicator">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold text-gray-700 dark:text-gray-300">Risk Level:</span>
+                            <span id="risk-level" class="font-bold"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                            <div id="risk-bar" class="h-3 rounded-full transition-all duration-500"></div>
+                        </div>
+                        <p id="risk-description" class="text-sm text-gray-600 dark:text-gray-400 mt-2"></p>
+                    </div>
+
+                    <!-- Predicted Disease -->
+                    <div class="mb-6 p-6 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                            <i class="fas fa-stethoscope text-blue-600 dark:text-blue-400 mr-2"></i>
+                            Predicted Condition:
+                        </h3>
+                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="predicted-disease"></p>
+                        <div class="mt-3">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">Confidence: </span>
+                            <span id="confidence-score" class="font-semibold text-green-600 dark:text-green-400">High</span>
+                        </div>
+                    </div>
+
+                    <!-- AI Description -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-3">
+                            <i class="fas fa-robot text-purple-600 dark:text-purple-400 mr-2"></i>
+                            AI Explanation
+                        </h3>
+                        <div class="bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded-xl p-4">
+                            <p id="disease-description" class="text-gray-700 dark:text-gray-300 leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Actions -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-3">
+                            <i class="fas fa-clipboard-list text-green-600 dark:text-green-400 mr-2"></i>
+                            Recommended Actions
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ul id="precautions-list" class="space-y-3"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap gap-4 pt-6 border-t border-gray-200 print-hide">
+                        <button onclick="printReport()" class="flex items-center bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-print mr-2"></i>Print Report
+                        </button>
+                        <button onclick="shareResults()" class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-share mr-2"></i>Share
+                        </button>
+                        <button onclick="findDoctors()" class="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            <i class="fas fa-user-md mr-2"></i>Find Doctors
+                        </button>
+                        <button onclick="resetForm()" class="flex items-center bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-redo mr-2"></i>New Assessment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Symptom categories with icons
+        const symptomCategories = {
+            'General': {
+                icon: 'fas fa-thermometer-half',
+                color: 'from-red-400 to-pink-500',
+                symptoms: ['fever', 'fatigue', 'weight_loss', 'weight_gain', 'sweating', 'chills', 'weakness']
+            },
+            'Respiratory': {
+                icon: 'fas fa-lungs',
+                color: 'from-blue-400 to-cyan-500',
+                symptoms: ['cough', 'breathlessness', 'chest_pain', 'phlegm', 'throat_irritation', 'sinus_pressure']
+            },
+            'Digestive': {
+                icon: 'fas fa-stomach',
+                color: 'from-green-400 to-emerald-500',
+                symptoms: ['stomach_pain', 'vomiting', 'nausea', 'diarrhoea', 'constipation', 'loss_of_appetite', 'stomach_bleeding', 'distention_of_abdomen']
+            },
+            'Cardiac': {
+                icon: 'fas fa-heartbeat',
+                color: 'from-red-500 to-rose-600',
+                symptoms: ['chest_pain', 'palpitations', 'fast_heart_rate', 'irregular_sugar_level']
+            },
+            'Neurological': {
+                icon: 'fas fa-brain',
+                color: 'from-purple-400 to-indigo-500',
+                symptoms: ['headache', 'dizziness', 'altered_sensorium', 'confusion', 'memory_problems', 'difficulty_concentrating']
+            },
+            'Skin': {
+                icon: 'fas fa-hand-paper',
+                color: 'from-yellow-400 to-orange-500',
+                symptoms: ['skin_rash', 'itching', 'skin_peeling', 'yellowish_skin', 'blackheads', 'scurring']
+            },
+            'Musculoskeletal': {
+                icon: 'fas fa-bone',
+                color: 'from-gray-400 to-slate-500',
+                symptoms: ['joint_pain', 'muscle_pain', 'back_pain', 'neck_pain', 'knee_pain', 'stiffness_of_neck']
+            },
+            'Eyes & Vision': {
+                icon: 'fas fa-eye',
+                color: 'from-teal-400 to-cyan-500',
+                symptoms: ['visual_disturbances', 'eye_pain', 'blurred_and_distorted_vision', 'watering_from_eyes']
+            },
+            'Other': {
+                icon: 'fas fa-plus-circle',
+                color: 'from-indigo-400 to-purple-500',
+                symptoms: []
+            }
+        };
+
+        // Emergency conditions that require immediate attention
+        const emergencyConditions = [
+            'Heart attack', 'Stroke', 'Cardiac arrest', 'Severe allergic reaction',
+            'Drug Reaction', 'Severe bleeding', 'Difficulty breathing'
+        ];
+
+        let allSymptoms = [];
+        let selectedSymptoms = new Set();
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDarkMode();
+            loadSymptoms();
+            setupEventListeners();
+            updateSubmitButton(); // Initialize button state
+        });
+
+        // Dark Mode Functionality
+        function initializeDarkMode() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            
+            // Check for saved theme preference or default to 'light'
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeIcon.className = 'fas fa-sun text-yellow-400 text-lg';
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIcon.className = 'fas fa-moon text-gray-600 text-lg';
+            }
+            
+            // Theme toggle event listener
+            themeToggle.addEventListener('click', function() {
+                if (document.documentElement.classList.contains('dark')) {
+                    // Switch to light mode
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'fas fa-moon text-gray-600 text-lg';
+                    
+                    // Add a nice transition effect
+                    themeToggle.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        themeToggle.style.transform = 'rotate(0deg)';
+                    }, 300);
+                } else {
+                    // Switch to dark mode
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'fas fa-sun text-yellow-400 text-lg';
+                    
+                    // Add a nice transition effect
+                    themeToggle.style.transform = 'rotate(-180deg)';
+                    setTimeout(() => {
+                        themeToggle.style.transform = 'rotate(0deg)';
+                    }, 300);
+                }
+            });
+        }
+
+        function loadSymptoms() {
+            // Get symptoms from the template
+            const symptomElements = document.querySelectorAll('input[name="symptoms"]');
+            
+            {% for value, display_text in symptoms %}
+            allSymptoms.push({
+                value: '{{ value }}',
+                display: '{{ display_text }}',
+                searchText: '{{ display_text }}'.toLowerCase()
+            });
+            {% endfor %}
+
+            console.log('Loaded symptoms:', allSymptoms.length);
+            
+            // Categorize symptoms
+            categorizeSymptoms();
+            renderSymptomCategories();
+        }
+
+        function categorizeSymptoms() {
+            // Assign symptoms to categories
+            allSymptoms.forEach(symptom => {
+                let assigned = false;
+                for (const [category, data] of Object.entries(symptomCategories)) {
+                    if (category === 'Other') continue;
+                    
+                    const found = data.symptoms.some(catSymptom => 
+                        symptom.value.includes(catSymptom) || catSymptom.includes(symptom.value)
+                    );
+                    
+                    if (found) {
+                        data.assignedSymptoms = data.assignedSymptoms || [];
+                        data.assignedSymptoms.push(symptom);
+                        assigned = true;
+                        break;
+                    }
+                }
+                
+                // If not assigned to any category, put in "Other"
+                if (!assigned) {
+                    symptomCategories.Other.assignedSymptoms = symptomCategories.Other.assignedSymptoms || [];
+                    symptomCategories.Other.assignedSymptoms.push(symptom);
+                }
+            });
+        }
+
+        function renderSymptomCategories() {
+            const container = document.getElementById('symptom-categories');
+            container.innerHTML = '';
+
+            console.log('Rendering categories:', Object.keys(symptomCategories));
+
+            Object.entries(symptomCategories).forEach(([category, data]) => {
+                console.log(`Category ${category}:`, data.assignedSymptoms?.length || 0, 'symptoms');
+                if (!data.assignedSymptoms || data.assignedSymptoms.length === 0) return;
+
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-shadow duration-200';
+                categoryCard.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-r ${data.color} rounded-full flex items-center justify-center mr-3">
+                            <i class="${data.icon} text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 dark:text-white text-lg">${category}</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${data.assignedSymptoms.length} symptoms</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3 max-h-64 overflow-y-auto symptom-list" data-category="${category}">
+                        ${data.assignedSymptoms.map(symptom => `
+                            <label class="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors symptom-item" data-symptom="${symptom.searchText}">
+                                <input type="checkbox" name="symptoms" value="${symptom.value}" 
+                                       class="h-5 w-5 text-blue-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded focus:ring-blue-500 dark:focus:ring-blue-400 mr-3">
+                                <span class="text-gray-700 dark:text-gray-300 flex-grow">${symptom.display}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(categoryCard);
+            });
+
+            // Add event listeners to checkboxes
+            document.querySelectorAll('input[name="symptoms"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedSymptoms);
+            });
+        }
+
+        function setupEventListeners() {
+            // Search functionality
+            const searchInput = document.getElementById('symptom-search');
+            searchInput.addEventListener('input', handleSearch);
+            
+            // Prevent Enter key from submitting form in search input
+            searchInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                }
+            });
+
+            // Clear all button
+            document.getElementById('clear-all').addEventListener('click', clearAllSymptoms);
+
+            // Form submission
+            const form = document.getElementById('prediction-form');
+            form.addEventListener('submit', handlePrediction);
+        }
+
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const symptomItems = document.querySelectorAll('.symptom-item');
+
+            symptomItems.forEach(item => {
+                const symptomText = item.dataset.symptom;
+                const checkbox = item.querySelector('input');
+                const label = item.querySelector('span');
+                
+                if (symptomText.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                    
+                    // Highlight search term
+                    if (searchTerm.length > 0) {
+                        const regex = new RegExp(`(${searchTerm})`, 'gi');
+                        const highlightedText = label.textContent.replace(regex, '<span class="search-highlight">$1</span>');
+                        label.innerHTML = highlightedText;
+                    } else {
+                        label.textContent = label.textContent; // Reset highlighting
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Show/hide category cards based on visible symptoms
+            document.querySelectorAll('.symptom-list').forEach(list => {
+                const visibleSymptoms = list.querySelectorAll('.symptom-item[style*="flex"]').length;
+                const categoryCard = list.closest('.bg-white');
+                categoryCard.style.display = visibleSymptoms > 0 ? 'block' : 'none';
+            });
+        }
+
+        function updateSelectedSymptoms() {
+            selectedSymptoms.clear();
+            document.querySelectorAll('input[name="symptoms"]:checked').forEach(checkbox => {
+                selectedSymptoms.add({
+                    value: checkbox.value,
+                    display: checkbox.closest('label').querySelector('span').textContent
+                });
+            });
+
+            // Update counter
+            document.getElementById('selected-count').textContent = selectedSymptoms.size;
+
+            // Update selected symptoms list
+            const selectedList = document.getElementById('selected-symptoms-list');
+            selectedList.innerHTML = '';
+            
+            selectedSymptoms.forEach(symptom => {
+                const tag = document.createElement('span');
+                tag.className = 'inline-flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm px-3 py-1 rounded-full border border-blue-200 dark:border-blue-700';
+                tag.innerHTML = `
+                    ${symptom.display}
+                    <button type="button" onclick="removeSymptom('${symptom.value}')" class="ml-2 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                `;
+                selectedList.appendChild(tag);
+            });
+
+            // Update button and instruction text based on selection
+            updateSubmitButton();
+        }
+
+        function updateSubmitButton() {
+            const button = document.getElementById('predict-btn');
+            const instructionText = document.getElementById('instruction-text');
+            const submitInstruction = document.getElementById('submit-instruction');
+            
+            if (selectedSymptoms.size > 0) {
+                // Make button more prominent when symptoms are selected
+                button.className = 'bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-5 px-16 rounded-2xl hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transform hover:scale-105 transition-all duration-200 text-xl shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-w-64 animate-pulse';
+                button.disabled = false;
+                instructionText.innerHTML = `<i class="fas fa-check-circle text-green-500 dark:text-green-400 mr-2"></i>Great! ${selectedSymptoms.size} symptom${selectedSymptoms.size > 1 ? 's' : ''} selected. Click below to get your prediction!`;
+                submitInstruction.className = 'mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800';
+            } else {
+                // Default state when no symptoms selected
+                button.className = 'bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-5 px-16 rounded-2xl focus:outline-none text-xl shadow-xl opacity-50 cursor-not-allowed min-w-64';
+                button.disabled = true;
+                instructionText.innerHTML = `<i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mr-2"></i>Select symptoms above, then click the button below to get your health assessment`;
+                submitInstruction.className = 'mb-4';
+            }
+        }
+
+        function removeSymptom(value) {
+            const checkbox = document.querySelector(`input[value="${value}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                updateSelectedSymptoms();
+            }
+        }
+
+        function clearAllSymptoms() {
+            document.querySelectorAll('input[name="symptoms"]:checked').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedSymptoms();
+        }
+
+        function handlePredictionClick() {
+            console.log('Button clicked!');
+            
+            if (selectedSymptoms.size === 0) {
+                alert('Please select at least one symptom before analyzing.');
+                return;
+            }
+
+            // Show loading state
+            const button = document.getElementById('predict-btn');
+            const buttonText = document.getElementById('btn-text');
+            const spinner = document.getElementById('loading-spinner');
+            
+            button.disabled = true;
+            buttonText.textContent = 'Analyzing...';
+            spinner.classList.remove('hidden');
+
+            // Create form data from selected symptoms
+            const formData = new FormData();
+            selectedSymptoms.forEach(symptom => {
+                formData.append('symptoms', symptom.value);
+            });
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during analysis. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                button.disabled = false;
+                buttonText.textContent = 'Predict Disease';
+                spinner.classList.add('hidden');
+            });
+        }
+
+        function handlePrediction(event) {
+            event.preventDefault();
+            console.log('Form submitted!', event);
+            
+            // This should not be called anymore since we changed button type
+            handlePredictionClick();
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results-section');
+            const emergencyAlert = document.getElementById('emergency-alert');
+            
+            // Check for emergency conditions
+            const isEmergency = emergencyConditions.some(condition => 
+                data.disease.toLowerCase().includes(condition.toLowerCase())
+            );
+
+            if (isEmergency) {
+                emergencyAlert.classList.remove('hidden');
+            } else {
+                emergencyAlert.classList.add('hidden');
+            }
+
+            // Update disease information
+            document.getElementById('predicted-disease').textContent = data.disease;
+            document.getElementById('disease-description').textContent = data.description;
+
+            // Update risk level (simulated based on disease type)
+            updateRiskLevel(data.disease);
+
+            // Update precautions
+            const precautionsList = document.getElementById('precautions-list');
+            precautionsList.innerHTML = '';
+            data.precautions.forEach(precaution => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800';
+                li.innerHTML = `
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 mt-0.5 mr-3"></i>
+                    <span class="text-gray-700 dark:text-gray-300">${precaution}</span>
+                `;
+                precautionsList.appendChild(li);
+            });
+
+            // Show results with animation
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateRiskLevel(disease) {
+            const riskIndicator = document.getElementById('risk-indicator');
+            const riskLevel = document.getElementById('risk-level');
+            const riskBar = document.getElementById('risk-bar');
+            const riskDescription = document.getElementById('risk-description');
+
+            // Simulate risk assessment based on disease
+            let risk, color, description, percentage;
+
+            if (emergencyConditions.some(condition => disease.toLowerCase().includes(condition.toLowerCase()))) {
+                risk = 'Critical';
+                color = 'bg-red-500';
+                description = 'Immediate medical attention required';
+                percentage = 90;
+                riskIndicator.className = 'mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700';
+            } else if (['tuberculosis', 'hepatitis', 'pneumonia'].some(condition => disease.toLowerCase().includes(condition.toLowerCase()))) {
+                risk = 'High';
+                color = 'bg-orange-500';
+                description = 'Should consult a doctor soon';
+                percentage = 70;
+                riskIndicator.className = 'mb-6 p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700';
+            } else if (['allergy', 'common cold', 'acne'].some(condition => disease.toLowerCase().includes(condition.toLowerCase()))) {
+                risk = 'Low';
+                color = 'bg-green-500';
+                description = 'Generally manageable with proper care';
+                percentage = 30;
+                riskIndicator.className = 'mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700';
+            } else {
+                risk = 'Moderate';
+                color = 'bg-yellow-500';
+                description = 'Monitor symptoms and consider medical consultation';
+                percentage = 50;
+                riskIndicator.className = 'mb-6 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700';
+            }
+
+            riskLevel.textContent = risk;
+            riskLevel.className = `font-bold text-gray-800 dark:text-gray-200 ${color.replace('bg-', 'text-')}`;
+            riskBar.className = `h-3 rounded-full transition-all duration-500 ${color}`;
+            riskBar.style.width = `${percentage}%`;
+            riskDescription.textContent = description;
+            riskDescription.className = 'text-gray-600 dark:text-gray-300';
+        }
+
+        // Additional functions for action buttons
+        function printReport() {
+            // Set the print date
+            const now = new Date();
+            const printDate = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+            document.getElementById('print-date').textContent = printDate;
+            
+            // Add selected symptoms to print version
+            const symptomsText = Array.from(selectedSymptoms).map(s => s.display).join(', ');
+            
+            // Create a temporary element with selected symptoms for print
+            let existingSymptomsPrint = document.getElementById('symptoms-for-print');
+            if (existingSymptomsPrint) {
+                existingSymptomsPrint.remove();
+            }
+            
+            const symptomsDiv = document.createElement('div');
+            symptomsDiv.id = 'symptoms-for-print';
+            symptomsDiv.innerHTML = `
+                <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+                    <h3 style="margin-bottom: 10px; color: black;"><i class="fas fa-list mr-2"></i>Selected Symptoms:</h3>
+                    <p style="color: black;">${symptomsText}</p>
+                </div>
+            `;
+            
+            // Insert symptoms after the print title
+            const printTitle = document.querySelector('.print-title');
+            if (printTitle && printTitle.parentNode) {
+                printTitle.parentNode.insertBefore(symptomsDiv, printTitle.nextSibling);
+            }
+            
+            // Print the page
+            window.print();
+        }
+
+        function shareResults() {
+            const disease = document.getElementById('predicted-disease').textContent;
+            const text = `Health Assessment Result: ${disease}. Analyzed using AI Disease Predictor.`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Health Assessment Result',
+                    text: text,
+                    url: window.location.href
+                });
+            } else {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Result copied to clipboard!');
+                });
+            }
+        }
+
+        function findDoctors() {
+            const disease = document.getElementById('predicted-disease').textContent;
+            const query = encodeURIComponent(`doctors near me ${disease}`);
+            window.open(`https://www.google.com/maps/search/${query}`, '_blank');
+        }
+
+        function resetForm() {
+            clearAllSymptoms();
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('symptom-search').value = '';
+            handleSearch({ target: { value: '' } });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
